@@ -1,0 +1,84 @@
+#!/bin/python3
+
+import serial
+import datetime
+from tkinter import * # sudo apt-get install python3-tk
+from tkinter import messagebox
+
+SERIAL_PORT = '/dev/ttyUSB0' # Thi is the USB port we're using
+SERIAL_RATE = 4800  # This is the baudrate from the PIC
+
+global R1 # Resistor; GND to PIC input
+global R2 # Resistor; Input power to PIC input
+global vout
+global vin
+global value
+
+# Make the main window
+window = Tk()
+window.title("DVM")
+window.geometry('270x250')
+
+# Functions
+def quit():
+    window.quit() 
+    
+def read_volt():
+    R1 = 100600 # Measured with multimeter to get a bit more accurate. Std value = 100000
+    R2 = 9950 # Measured with multimeter to get a bit more accurate. Std value = 10000
+    
+    try:
+        ser = serial.Serial(SERIAL_PORT, SERIAL_RATE)
+        reading = ser.readline()   
+        
+        vout = (int(reading)* 5.0) / 1024.0
+        vin = vout / (R2/(R1+R2))
+        new_volt = ('{0:0.2f}'.format(vin))
+
+        lbl_volt.config(text=new_volt)
+        lbl_volt.after(600, read_volt)
+        
+    except:
+        print ('Not found')
+        messagebox.showerror('Not found','''\
+        Cannot find USB to TTL
+        Hit OK to exit.''')
+        sys.exit()
+        
+# Make and place labels
+lbl_header = Label(window, text="Digital voltmeter", font=("Helvetica", 26))
+lbl_header.place(x=130, y=30, anchor="center")
+
+lbl_volt = Label(window, text="0.00", font=("DSEG7 Classic", 48))
+lbl_volt.place(x=120, y=120, anchor="center")
+
+# Make and place buttons
+btn_quit = Button(window, text="Quit", command=quit)
+btn_quit.place(relx=0.5, y=200, anchor="center")
+
+#This is needed to "autorun" this function, remove () and it will no "autorun"
+btn_start = Button(window, text="Start", command=read_volt()) 
+#btn_start.place(relx=0.5, y=200, anchor=W)
+
+# Run the mainloop
+window.mainloop()
+
+
+# ASCIL drawing of the voltage divider
+
+#   | <- input voltage
+#   |
+#   |
+#   --
+#   ||  <- R2
+#   -- 
+#   |
+#   |  <- To PIC
+#   |
+#   --
+#   || <- R1
+#   --
+#   |
+#   |
+#   | <- to GND
+   
